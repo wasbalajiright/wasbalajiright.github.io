@@ -37,9 +37,50 @@
       }
       
       setInterval(countdown, 1000);
+      var options = {
+        chart: {
+          type: "area",
+          height: 350,
+        },
+        dataLabels: {
+          enabled: false
+        },
+        stroke: {
+          curve: "smooth"
+        },
+        series: [{
+          name: "Bitcoin to USD",
+          data: []
+        }],
+        xaxis: {
+          type: "datetime",
+          categories: []
+        },
+      };
+      
+      var chart = new ApexCharts(document.querySelector("#chart"), options);
+      
+      fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily")
+        .then(response => response.json())
+        .then(data => {
+          var series = [{
+            name: "Bitcoin to USD",
+            data: data.prices.map(price => price[1])
+          }];
+          var categories = data.prices.map(price => new Date(price[0]).getTime());
+          chart.updateOptions({
+            series: series,
+            xaxis: {
+              categories: categories
+            }
+          });
+          chart.render();
+        })
+        .catch(error => console.log(error));
     </script>
   </head>
-  <body onload="countdown()">
+  <body>
     <div id="countdown">Waiting...</div>
+    <div id="chart"></div>
   </body>
 </html>
