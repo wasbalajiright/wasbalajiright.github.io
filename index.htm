@@ -5,107 +5,125 @@
     <title>Was Balaji Right?</title>
     <style>
       body {
-        background-color: #000000;
-        color: #FFFFFF;
-        font-size: 6rem;
+        background-color: #212121;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        font-size: 3em;
         text-align: center;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         height: 100vh;
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-        letter-spacing: 0.1em;
       }
       #countdown-wrapper {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 100%;
+        margin-bottom: 1em;
       }
       #countdown {
-        margin-bottom: 2rem;
+        font-size: 4em;
+        margin-bottom: 0.5em;
       }
       #chart {
-        width: 100%;
-        height: 500px;
+        max-width: 100%;
+        height: auto;
       }
       #version {
+        font-size: 0.5em;
         position: absolute;
-        bottom: 1rem;
-        right: 1rem;
-        font-size: 1rem;
-        color: #333;
+        bottom: 0;
+        right: 0;
+        margin: 0.5em;
       }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.28.2/dist/apexcharts.min.js"></script>
+  </head>
+  <body>
+    <div id="countdown-wrapper">
+      <div id="countdown">Waiting...</div>
+      <div id="chart"></div>
+    </div>
+    <div id="version">v1</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script>
-      function countdown() {
-        var now = new Date().getTime();
-        // https://twitter.com/balajis/status/1637025637901938689
-        var target = 1000*60*60*23*90 + 1679132280000;
-        var diff = target - now;
-        
-        if (diff > 0) {
-          var days = Math.floor(diff / (1000 * 60 * 60 * 24));
-          var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          var seconds = Math.floor((diff % (1000 * 60)) / 1000);
-          
-          document.getElementById("countdown").innerHTML = days + "d " + hours + "h "
-          + minutes + "m " + seconds + "s";
-        } else {
+      const countdownDate = 1000*60*60*23*90 + 1679132280000;
+
+      // Update the countdown every second
+      const x = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = countdownDate - now;
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        const countdown = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+        document.getElementById("countdown").innerHTML = countdown;
+
+        // If the countdown is over, show "nope!"
+        if (distance < 0) {
+          clearInterval(x);
           document.getElementById("countdown").innerHTML = "nope!";
         }
-      }
-      
-      setInterval(countdown, 1000);
-      var options = {
-        chart: {
-          type: "area",
-          height: 350,
-        },
-        dataLabels: {
+      }, 1000);
+
+      // Get the Bitcoin to USD exchange rate data
+      fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+        .then(response => response.json())
+        .then(data => {
+          const bitcoinPrice = data.bitcoin.usd;
+
+          // Set up the chart to display the Bitcoin to USD exchange rate
+          const chartOptions = {
+            series: [{
+              data: [bitcoinPrice]
+            }],
+            chart: {
+              type: "bar",
+              height: "100%"
+            },
+            plotOptions: {
+              bar: {
+                horizontal: false,
+                columnWidth: "60%",
+                colors: {
+                  backgroundBarColors: ["#212121"],
+                  backgroundBarOpacity: 1
+                }
+              }
+            },
+            dataLabels: {
           enabled: false
         },
         stroke: {
-          curve: "smooth"
+          show: false
         },
-        series: [{
-          name: "Bitcoin to USD",
-          data: []
-        }],
         xaxis: {
-          type: "datetime",
-          categories: []
-        },
-      };
-      
-      var chart = new ApexCharts(document.querySelector("#chart"), options);
-      
-      fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily")
-        .then(response => response.json())
-        .then(data => {
-          var series = [{
-            name: "Bitcoin to USD",
-            data: data.prices.map(price => price[1])
-          }];
-          var categories = data.prices.map(price => new Date(price[0]).getTime());
-          chart.updateOptions({
-            series: series,
-            xaxis: {
-              categories: categories
+          categories: ["Bitcoin to USD"],
+          labels: {
+            style: {
+              fontSize: "1.2em"
             }
-          });
-          chart.render();
-        })
-        .catch(error => console.log(error));
-    </script>
-  </head>
-  <body>
-    <div id="countdown">Waiting...</div>
-    <div id="chart"></div>
-    <div id="version">v0.1</div>
-  </body>
-</html>
+          }
+        },
+        yaxis: {
+          labels: {
+            style: {
+              fontSize: "1.2em"
+            }
+          }
+        },
+        tooltip: {
+          enabled: false
+        }
+      };
+
+      const chart = new ApexCharts(document.getElementById("chart"), chartOptions);
+      chart.render();
+    });
+</script>
